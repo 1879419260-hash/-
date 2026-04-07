@@ -1,0 +1,2511 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>车辆管理系统</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3b82f6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="车辆管理系统">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    font-size: 16px;
+  }
+  
+  body {
+    background: #f8fafc;
+    display: flex;
+    min-height: 100vh;
+    color: #334155;
+  }
+  
+  /* 侧边栏样式 */
+  .sidebar {
+    width: 260px;
+    background: #1e293b;
+    color: #f8fafc;
+    padding: 1.5rem;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    overflow-y: auto;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+  
+  /* 自定义滚动条样式 */
+  .sidebar::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .sidebar::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+  }
+  
+  .sidebar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+  }
+  
+  .sidebar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+  }
+  
+  .sidebar h1 {
+    font-size: 22px;
+    margin-bottom: 2rem;
+    font-weight: 700;
+    color: #f8fafc;
+    text-align: center;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .nav-section {
+    margin-bottom: 2rem;
+  }
+  
+  .nav-section-title {
+    font-size: 16px;
+    color: #94a3b8;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .nav-section-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .nav-section-buttons button {
+    background: rgba(75, 85, 99, 0.3);
+    color: #f8fafc;
+    border: none;
+    padding: 12px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .nav-section-buttons button:hover {
+    background: rgba(75, 85, 99, 0.5);
+    transform: translateX(4px);
+  }
+  
+  .nav-section-buttons button.active {
+    background: #3b82f6;
+    color: #ffffff;
+  }
+  
+  /* 按钮颜色 */
+  .save-btn { background: #f59e0b !important; }
+  .load-btn { background: #10b981 !important; }
+  .export-btn { background: #14b8a6 !important; }
+  .import-btn { background: #3b82f6 !important; }
+  .check-btn { background: #8b5cf6 !important; }
+  .batch-shelf-btn { background: #ec4899 !important; }
+  .batch-material-btn { background: #10b981 !important; }
+  
+  /* 主内容区域 */
+  .main-content {
+    flex: 1;
+    margin-left: 260px;
+    padding: 2rem 0.5rem;
+    transition: all 0.3s ease;
+  }
+  
+  .container {
+    max-width: 1800px;
+    width: 100%;
+    margin: 0 auto;
+  }
+  
+  /* 页面切换 */
+  .page {
+    display: none;
+    animation: fadeIn 0.3s ease;
+  }
+  
+  .page.active {
+    display: block;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  /* 仪表盘标题 */
+  .dashboard-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ffffff;
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .dashboard-title h2 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1e293b;
+  }
+  
+  /* 统计卡片 */
+  .grid-stat {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .stat-box {
+    background: #ffffff;
+    padding: 1.5rem;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .stat-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: #3b82f6;
+  }
+  
+  .stat-box h4 {
+    font-size: 16px;
+    color: #64748b;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+  }
+  
+  .stat-box .num {
+    font-size: 32px;
+    font-weight: 700;
+    color: #1e293b;
+  }
+  
+  .num.clickable {
+    cursor: pointer;
+    color: #3b82f6;
+    text-decoration: underline;
+  }
+  
+  .num.clickable:hover {
+    color: #2563eb;
+  }
+  
+  /* 月度统计 */
+  .grid-month {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .month-box {
+    background: #ffffff;
+    padding: 1.25rem;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .month-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-color: #3b82f6;
+  }
+  
+  .month-box h4 {
+    font-size: 14px;
+    color: #64748b;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  
+  /* 图表区域 */
+  .chart-box {
+    background: #ffffff;
+    padding: 1.5rem 0.5rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    margin-bottom: 1.5rem;
+    border: 1px solid #e2e8f0;
+    width: 100%;
+    max-width: 1800px;
+  }
+  
+  .chart-box h4 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 1rem;
+  }
+  
+  /* 筛选栏 */
+  .filter-bar {
+    background: #ffffff;
+    padding: 1.25rem;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    border: 1px solid #e2e8f0;
+  }
+  
+  /* 表格区域 */
+  .table-box {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .table-box h4 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    margin: 0;
+  }
+  
+  .table-box table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .table-box th,
+  .table-box td {
+    padding: 0.75rem 1.5rem;
+    text-align: center;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  
+  .table-box th {
+    background: #f8fafc;
+    font-weight: 600;
+    color: #334155;
+    font-size: 14px;
+  }
+  
+  .table-box tr:hover {
+    background: #f8fafc;
+  }
+  
+  .month-box .num {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1e293b;
+  }
+  
+  .month-box .num.clickable {
+    cursor: pointer;
+    color: #3b82f6;
+    text-decoration: underline;
+  }
+  
+  .month-box .num.clickable:hover {
+    color: #2563eb;
+  }
+  
+  /* 图表盒子 */
+  .chart-box {
+    background: #ffffff;
+    padding: 1.5rem;
+    border-radius: 12px;
+    height: 420px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .chart-box h4 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+  
+  .chart-box #chartTask {
+    width: 90%;
+    max-width: 1000px;
+  }
+  
+  /* 过滤栏 */
+  .filter-bar {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: #ffffff;
+    padding: 1.25rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .filter-bar input,
+  .filter-bar select {
+    padding: 10px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    min-width: 160px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+  }
+  
+  .filter-bar input:focus,
+  .filter-bar select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  /* 表格盒子 */
+  .table-box {
+    background: #ffffff;
+    padding: 1.5rem;
+    border-radius: 12px;
+    overflow: auto;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .table-box h4 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 1rem;
+  }
+  
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 16px;
+  }
+  
+  th, td {
+    padding: 12px 16px;
+    text-align: center;
+    border-bottom: 1px solid #e2e8f0;
+    white-space: nowrap;
+    font-size: 16px;
+  }
+  
+  th {
+    background: #f8fafc;
+    font-weight: 700;
+    color: #334155;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    font-size: 16px;
+  }
+  
+  tr:hover {
+    background: #f8fafc;
+  }
+  
+  /* 表单盒子 */
+  .form-box {
+    background: #ffffff;
+    padding: 2rem;
+    border-radius: 12px;
+    max-width: 1000px;
+    margin: 0 auto;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .form-box h3 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .form-group {
+    margin-bottom: 1.25rem;
+  }
+  
+  .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #334155;
+    font-size: 16px;
+  }
+  
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    font-size: 16px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+  }
+  
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  /* 车辆列表 */
+  .car-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1.25rem;
+  }
+  
+  .car-item {
+    background: #ffffff;
+    padding: 1.5rem;
+    border-radius: 12px;
+    position: relative;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+  }
+  
+  .car-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .car-item-material-red {
+    border: 2px solid #ef4444;
+    background: #fff1f1;
+  }
+  
+  .car-item-off-shelf {
+    background-color: #fff5f5;
+    border-left: 4px solid #ef4444;
+  }
+  
+  /* 按钮样式 */
+  .btn {
+    padding: 10px 18px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-right: 8px;
+    margin-top: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+  
+  .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .btn:active {
+    transform: translateY(0);
+  }
+  
+  .btn-primary {
+    background: #3b82f6;
+    color: #ffffff;
+  }
+  
+  .btn-success {
+    background: #10b981;
+    color: #ffffff;
+  }
+  
+  .btn-danger {
+    background: #ef4444;
+    color: #ffffff;
+  }
+  
+  .btn-warning {
+    background: #f59e0b;
+    color: #ffffff;
+  }
+  
+  /* 管理表格 */
+  .manager-table td {
+    padding: 10px 12px;
+    font-size: 16px;
+  }
+  
+  /* 盘库表格样式 */
+  #checkTable td:nth-child(3), /* 所属人 */
+  #checkTable td:nth-child(4), /* 备注编辑 */
+  #checkTable td:nth-child(5), /* 盘库状态 */
+  #checkTable td:nth-child(6)  /* 操作 */
+  {
+    text-align: left;
+    padding-left: 8px;
+  }
+  
+  #checkTable textarea {
+    width: 100%;
+    min-width: 100px;
+    max-width: 200px;
+    padding: 4px 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  
+  /* 车辆详情表格样式 */
+  #carDetailsBody table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  
+  #carDetailsBody th,
+  #carDetailsBody td {
+    padding: 6px 8px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  #carDetailsBody th {
+    background: #f8fafc;
+    font-weight: 600;
+    color: #334155;
+  }
+  
+  #carDetailsBody tr:hover {
+    background: #f8fafc;
+  }
+  
+  #carDetailsBody {
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* 模态框 */
+  .modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    animation: fadeIn 0.3s ease;
+  }
+  
+  .modal-content {
+    background: #ffffff;
+    padding: 2rem;
+    width: 100%;
+    max-width: 800px;
+    max-height: 80vh;
+    overflow-y: auto;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    animation: slideIn 0.3s ease;
+  }
+  
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  .modal-content h3 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .modal-btn {
+    text-align: right;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e2e8f0;
+  }
+  
+  /* 价格统计栏 */
+  .price-stat-bar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .price-stat-item {
+    background: #ffffff;
+    padding: 1.25rem;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+  }
+  
+  .price-stat-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .price-stat-item h4 {
+    font-size: 14px;
+    color: #64748b;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+  }
+  
+  .price-stat-item .num {
+    font-size: 24px;
+    font-weight: 600;
+    color: #1e293b;
+  }
+  
+  /* 编辑行 */
+  .edit-row {
+    margin: 12px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .edit-row label {
+    min-width: 90px;
+    font-weight: 500;
+    color: #334155;
+  }
+  
+  .edit-row input,
+  .edit-row select,
+  .edit-row textarea {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+  }
+  
+  .edit-row input:focus,
+  .edit-row select:focus,
+  .edit-row textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  /* 小组详情样式 */
+  .group-detail-content {
+    line-height: 1.6;
+  }
+  
+  .group-info p {
+    margin-bottom: 0.75rem;
+  }
+  
+  .group-info strong {
+    color: #334155;
+  }
+  
+  .btn-sm {
+    padding: 4px 8px;
+    font-size: 12px;
+    margin-left: 8px;
+  }
+  
+  .member-details {
+    margin-top: 1rem;
+  }
+  
+  .member-details p {
+    margin-bottom: 0.5rem;
+    padding: 8px 12px;
+    background: #f8fafc;
+    border-radius: 6px;
+  }
+  
+  /* 响应式设计 */
+  @media (max-width: 768px) {
+    .sidebar {
+      width: 220px;
+      padding: 1rem;
+    }
+    
+    .main-content {
+      margin-left: 220px;
+      padding: 1rem;
+    }
+    
+    .grid-stat {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .grid-month {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .car-list {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .sidebar {
+      width: 100%;
+      height: auto;
+      position: relative;
+      min-height: auto;
+    }
+    
+    .main-content {
+      margin-left: 0;
+    }
+    
+    .grid-stat {
+      grid-template-columns: 1fr;
+    }
+    
+    .grid-month {
+      grid-template-columns: 1fr;
+    }
+    
+    .filter-bar {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .filter-bar input,
+    .filter-bar select {
+      width: 100%;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="sidebar">
+  <h1>车辆管理系统</h1>
+
+  <div class="nav-section">
+    <div class="nav-section-title">功能导航</div>
+    <div class="nav-section-buttons">
+      <button onclick="showPage('dashboard')" class="active">看板</button>
+      <button onclick="showPage('cars')">车辆</button>
+      <button onclick="showPage('check')">盘库</button>
+      <button onclick="showPage('add')">新增</button>
+      <button onclick="showPage('sale')">销售</button>
+      <button onclick="showPage('member')">人员管理</button>
+      <button onclick="showPage('recycle')">回收站</button>
+    </div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-section-title">数据管理</div>
+    <div class="nav-section-buttons">
+      <button class="load-btn" onclick="openLoadFile()">恢复数据</button>
+      <button class="save-btn" onclick="saveToJsonFile()">备份数据</button>
+      <button class="export-btn" onclick="exportAllExcel()">导出Excel</button>
+      <button class="import-btn" onclick="triggerImportExcel()">导入Excel</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="importExcelFile" accept=".xlsx,.xls,.csv" style="display:none;">
+<input type="file" id="fileLoader" accept=".json" style="display:none;" onchange="loadFromJsonFile(event)">
+<div class="main-content">
+  <div class="container">
+  <div id="dashboard" class="page active">
+    <div class="dashboard-title">
+      <h2>采购部报表</h2>
+      <div id="todayDate"></div>
+    </div>
+    <div class="grid-stat">
+      <div class="stat-box"><h4>当前库存</h4><div class="num" id="totalStock">0</div></div>
+      <div class="stat-box"><h4>今日收车</h4><div class="num clickable" id="todayIn" onclick="showCarDetails('todayIn')">0</div></div>
+      <div class="stat-box"><h4>今日售车</h4><div class="num clickable" id="todayOut" onclick="showCarDetails('todayOut')">0</div></div>
+      <div class="stat-box"><h4>累计售车</h4><div class="num" id="totalSold">0</div></div>
+    </div>
+    <div class="grid-month">
+      <div class="month-box"><h4>当月10万以内收车</h4><div class="num clickable" id="mIn1" onclick="showCarDetails('mIn1')">0</div></div>
+      <div class="month-box"><h4>当月10-20万收车</h4><div class="num clickable" id="mIn2" onclick="showCarDetails('mIn2')">0</div></div>
+      <div class="month-box"><h4>当月20万以上收车</h4><div class="num clickable" id="mIn3" onclick="showCarDetails('mIn3')">0</div></div>
+      <div class="month-box"><h4>当月10万以内售车</h4><div class="num clickable" id="mOut1" onclick="showCarDetails('mOut1')">0</div></div>
+      <div class="month-box"><h4>当月10-20万售车</h4><div class="num clickable" id="mOut2" onclick="showCarDetails('mOut2')">0</div></div>
+      <div class="month-box"><h4>当月20万以上售车</h4><div class="num clickable" id="mOut3" onclick="showCarDetails('mOut3')">0</div></div>
+    </div>
+    <div class="chart-box">
+      <h4>采购任务分析</h4>
+      <div id="chartTask" style="width:100%;height:400px"></div>
+    </div>
+    <div class="filter-bar">
+      <input id="personSearch" placeholder="搜索人员/小组名称" oninput="renderPersonStock()">
+      <select id="fOwner1"><option value="">全部</option></select>
+      <select id="fRange1"><option value="">全部区间</option><option value="10万以内">10万以内</option><option value="10-20万">10-20万</option><option value="20万以上">20万以上</option></select>
+      <button class="btn btn-primary" onclick="renderPersonStock()">筛选</button>
+    </div>
+    <div class="table-box">
+      <h4>个人/小组库存明细</h4>
+      <table>
+        <thead><tr><th>人员/小组</th><th>价格区间库存</th><th>总库存</th><th>本月收车</th><th>本月售车</th><th>采销占比</th><th>完成进度</th></tr></thead>
+        <tbody id="personStockTable"></tbody>
+      </table>
+    </div>
+  </div>
+  <div id="cars" class="page">
+    <h3>车辆管理
+      <button class="btn batch-shelf-btn" onclick="batchSetShelfOn()">批量上架未上架</button>
+      <button class="btn batch-material-btn" onclick="batchAllMaterialOK()">一键材料齐全</button>
+    </h3>
+    <div class="price-stat-bar">
+      <div class="price-stat-item"><h4>10万以内</h4><div class="num" id="carRange1">0</div></div>
+      <div class="price-stat-item"><h4>10-20万</h4><div class="num" id="carRange2">0</div></div>
+      <div class="price-stat-item"><h4>20万以上</h4><div class="num" id="carRange3">0</div></div>
+    </div>
+    <div class="filter-bar">
+      <input id="carSearch" placeholder="搜索品牌/车架号/所属人" oninput="renderCarList()">
+      <select id="carOwnerFilter" onchange="renderCarList()"><option value="">全部所属人</option></select>
+      <select id="carPriceFilter" onchange="renderCarList()"><option value="">全部区间</option><option value="10万以内">10万以内</option><option value="10-20万">10-20万</option><option value="20万以上">20万以上</option></select>
+      <select id="carShelfFilter" onchange="renderCarList()"><option value="">全部状态</option><option value="on">已上架</option><option value="off">未上架</option></select>
+      <select id="carStockFilter" onchange="renderCarList()"><option value="">全部库存时间</option><option value="30">大于30天</option><option value="45">大于45天</option></select>
+    </div>
+    <div class="car-list" id="carList"></div>
+  </div>
+  <div id="check" class="page">
+    <h3>车辆盘库</h3>
+    <div class="filter-bar">
+      <input id="checkSearch" placeholder="搜索品牌/车架号/备注" oninput="renderCheckList()">
+      <select id="checkFilter" onchange="renderCheckList()">
+        <option value="all">全部</option>
+        <option value="checked">已盘</option>
+        <option value="unchecked">未盘</option>
+      </select>
+      <button class="btn check-btn" onclick="doCheckAll()">一键盘库</button>
+      <button class="btn btn-warning" onclick="resetCheckAll()">重置盘库</button>
+    </div>
+    <div class="table-box">
+      <table>
+        <thead>
+          <tr><th>品牌型号</th><th>车架号</th><th>所属人</th><th>备注编辑</th><th>盘库状态</th><th>操作</th></tr>
+        </thead>
+        <tbody id="checkTable"></tbody>
+      </table>
+    </div>
+  </div>
+  <div id="add" class="page">
+    <div class="form-box">
+      <h3>新增车辆</h3>
+      <div class="form-group">
+        <label>文本识别</label>
+        <textarea id="textRecognition" placeholder="请输入车辆信息文本，系统会自动识别并填充表单" style="height: 150px;"></textarea>
+        <button class="btn btn-primary" onclick="recognizeText()" style="margin-top: 10px;">识别文本</button>
+      </div>
+      <div class="form-group"><label>车架号</label><input id="vin"></div>
+      <div class="form-group"><label>品牌</label><input id="brand"></div>
+      <div class="form-group"><label>车辆型号</label><input id="model"></div>
+      <div class="form-group"><label>上牌时间</label><input id="regTime"></div>
+      <div class="form-group"><label>排量</label><input id="displacement"></div>
+      <div class="form-group"><label>公里数</label><input id="mileage"></div>
+      <div class="form-group"><label>颜色</label><input id="color"></div>
+      <div class="form-group"><label>过户次数</label><input id="transfer"></div>
+      <div class="form-group"><label>采购日期</label><input type="date" id="purchaseDate" required></div>
+      <div class="form-group"><label>所属人</label><input id="owner" required></div>
+      <div class="form-group"><label>占比</label><input id="ratio"></div>
+      <div class="form-group"><label>线索来源</label><input id="source"></div>
+      <div class="form-group"><label>采购价（万元）</label><input id="buyPrice" type="number"></div>
+      <div class="form-group"><label>价格区间</label>
+        <select id="priceRange">
+          <option value="10万以内">10万以内</option>
+          <option value="10-20万">10-20万</option>
+          <option value="20万以上">20万以上</option>
+        </select>
+      </div>
+      <div class="form-group"><label>上架状态</label>
+        <select id="shelfStatus">
+          <option value="off">未上架</option>
+          <option value="on">已上架</option>
+        </select>
+      </div>
+      <button class="btn btn-success" onclick="saveCar()">保存车辆</button>
+    </div>
+  </div>
+  <div id="sale" class="page">
+    <h3>销售管理</h3>
+    <div class="filter-bar">
+      <input id="saleSearch" placeholder="搜索品牌/车架号/所属人" oninput="renderSaleList()">
+      <input id="saleSellerFilter" placeholder="销售人员" oninput="renderSaleList()">
+      <select id="saleOwnerFilter" onchange="renderSaleList()"><option value="">全部</option></select>
+      <select id="salePriceFilter" onchange="renderSaleList()"><option value="">全部区间</option><option value="10万以内">10万以内</option><option value="10-20万">10-20万</option><option value="20万以上">20万以上</option></select>
+    </div>
+    <div class="table-box">
+      <table>
+        <thead>
+          <tr><th>品牌型号</th><th>车架号</th><th>所属人</th><th>采购价</th><th>价格区间</th><th>销售人员</th><th>销售日期</th><th>操作</th></tr>
+        </thead>
+        <tbody id="saleTable"></tbody>
+      </table>
+    </div>
+  </div>
+  <div id="member" class="page">
+    <div class="form-box">
+      <h3>人员管理（车辆所属人自动同步）</h3>
+      <div class="form-group">
+        <label>新增人员</label>
+        <div style="display:flex;gap:10px">
+          <input id="newName" placeholder="姓名" style="flex:1">
+          <input id="newTarget" placeholder="目标" style="width:100px">
+          <button class="btn btn-success" onclick="addMember()">添加</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>合并小组（例：张三,李四）</label>
+        <div style="display:flex;gap:10px">
+          <input id="groupNames" placeholder="多人逗号分隔" style="flex:1">
+          <input id="groupName" placeholder="小组名" style="flex:1">
+          <input id="groupTarget" placeholder="小组目标" style="width:100px">
+          <button class="btn btn-primary" onclick="createGroup()">合并小组</button>
+        </div>
+      </div>
+      <table class="manager-table" border="1">
+        <thead><tr><th>名称</th><th>类型</th><th>目标</th><th>操作</th></tr></thead>
+        <tbody id="memberTable"></tbody>
+      </table>
+    </div>
+  </div>
+  <div id="recycle" class="page">
+    <div class="table-box">
+      <h3>回收站</h3>
+      <table border="1">
+        <thead><tr><th>品牌型号</th><th>车架号</th><th>所属人</th><th>操作</th></tr></thead>
+        <tbody id="recycleTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div id="detailModal" style="display:none;">
+  <div class="modal">
+    <div class="modal-content">
+      <h3>车辆详情（可编辑）</h3>
+      <div id="detailForm">
+        <input type="hidden" id="editCarId">
+        <div class="edit-row"><label>车架号</label><input id="editVin"></div>
+        <div class="edit-row"><label>品牌</label><input id="editBrand"></div>
+        <div class="edit-row"><label>型号</label><input id="editModel"></div>
+        <div class="edit-row"><label>上牌时间</label><input id="editRegTime"></div>
+        <div class="edit-row"><label>采购日期</label><input type="date" id="editPurchaseDate"></div>
+        <div class="edit-row"><label>排量</label><input id="editDisplacement"></div>
+        <div class="edit-row"><label>公里数</label><input id="editMileage"></div>
+        <div class="edit-row"><label>颜色</label><input id="editColor"></div>
+        <div class="edit-row"><label>过户次数</label><input id="editTransfer"></div>
+        <div class="edit-row"><label>所属人</label><input id="editOwner"></div>
+        <div class="edit-row"><label>占比</label><input id="editRatio"></div>
+        <div class="edit-row"><label>采购价(万)</label><input type="number" id="editBuy"></div>
+        <div class="edit-row"><label>价格区间</label>
+          <select id="editPriceRange">
+            <option value="10万以内">10万以内</option>
+            <option value="10-20万">10-20万</option>
+            <option value="20万以上">20万以上</option>
+          </select>
+        </div>
+        <div class="edit-row"><label>上架状态</label>
+          <select id="editShelfStatus">
+            <option value="off">未上架</option>
+            <option value="on">已上架</option>
+          </select>
+        </div>
+        <div class="edit-row"><label>材料齐全</label>
+          <input type="checkbox" id="editMaterialOK">
+        </div>
+        <div class="edit-row"><label>盘库状态</label>
+          <input type="checkbox" id="editChecked">
+        </div>
+        <div class="edit-row"><label>备注</label>
+          <textarea id="editNote" rows="3"></textarea>
+        </div>
+      </div>
+      <div class="modal-btn">
+        <button class="btn btn-success" onclick="saveEditCar()">保存修改</button>
+        <button class="btn btn-primary" onclick="closeModal()">关闭</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="groupDetailModal" style="display:none;">
+  <div class="modal">
+    <div class="modal-content">
+      <h3 id="groupDetailTitle">小组详情</h3>
+      <div id="groupDetailBody"></div>
+      <div class="modal-btn">
+        <button class="btn btn-primary" onclick="closeGroupModal()">关闭</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="carDetailsModal" style="display:none;">
+  <div class="modal">
+    <div class="modal-content">
+      <h3 id="carDetailsTitle">车辆详情</h3>
+      <div id="carDetailsBody"></div>
+      <div class="modal-btn">
+        <button class="btn btn-primary" onclick="closeCarDetailsModal()">关闭</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="personDetailModal" style="display:none;">
+  <div class="modal">
+    <div class="modal-content" style="width: 800px; max-width: 90vw;">
+      <h3 id="personDetailTitle">个人/小组详情</h3>
+      <div style="margin-bottom: 20px;">
+        <div id="personDetailInfo" style="margin-bottom: 20px; text-align: center;"></div>
+        <div style="display: flex; justify-content: center;">
+          <div id="personDetailChart" style="width: 90%; max-width: 600px; height: 400px;"></div>
+        </div>
+      </div>
+      <div class="modal-btn">
+        <button class="btn btn-primary" onclick="closePersonDetailModal()">关闭</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+<script>
+let chartTask;
+let members = [];
+let carData = [];
+let saleData = [];
+let recycleData = [];
+let allPurchaseHistory = [];
+let currentEditId = null;
+let groupMemberMap = {};
+
+// 全局键盘事件监听，按Esc键关闭所有模态框
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'Escape') {
+    // 关闭车辆详情（可编辑）模态框
+    if (document.getElementById('detailModal').style.display === 'flex') {
+      document.getElementById('detailModal').style.display = 'none';
+    }
+    // 关闭小组详情模态框
+    if (document.getElementById('groupDetailModal').style.display === 'flex') {
+      closeGroupModal();
+    }
+    // 关闭车辆详情模态框
+    if (document.getElementById('carDetailsModal').style.display === 'flex') {
+      closeCarDetailsModal();
+    }
+
+
+  }
+});
+
+
+
+
+
+function formatDateToCN(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`;
+}
+function nowDate() {
+  const d = new Date();
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,0)+"-"+String(d.getDate()).padStart(2,0);
+}
+function nowMonth() {
+  const d = new Date();
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,0);
+}
+function isToday(dateStr) {
+  if(!dateStr) return false;
+  const d = new Date(dateStr);
+  const t = new Date();
+  return d.getFullYear()===t.getFullYear() && d.getMonth()===t.getMonth() && d.getDate()===t.getDate();
+}
+function isCurrentMonth(dateStr) {
+  if(!dateStr) return false;
+  const d = new Date(dateStr);
+  const m = d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,0);
+  return m === nowMonth();
+}
+function getPersonGroups(name){
+  return Object.keys(groupMemberMap).filter(g=>groupMemberMap[g]?.includes(name));
+}
+function syncMembersFromCars() {
+  // 从车辆数据中提取所有车主
+  const carOwners = [...new Set(carData.map(c=>c.owner).filter(o=>o))];
+  // 从销售数据中提取所有销售人员
+  const saleOwners = [...new Set(saleData.map(s=>s.owner).filter(o=>o))];
+  // 从所有采购历史中提取所有采购人员
+  const purchaseOwners = [...new Set(allPurchaseHistory.map(p=>p.owner).filter(o=>o))];
+  // 合并所有唯一的人员
+  const all = [...new Set([...carOwners,...saleOwners,...purchaseOwners])];
+  // 添加缺失的个人成员
+  all.forEach(name=>{
+    if(!members.some(m=>m.name===name)){
+      members.push({name,type:"person",target:5});
+    }
+  });
+  // 确保所有小组的成员都存在于成员列表中
+  Object.values(groupMemberMap).forEach(memberNames => {
+    memberNames.forEach(name => {
+      if(!members.some(m=>m.name===name)){
+        members.push({name,type:"person",target:5});
+      }
+    });
+  });
+}
+function loadFromLocal() {
+  members = JSON.parse(localStorage.getItem('members') || '[{"name":"张三","type":"person","target":5},{"name":"李四","type":"person","target":5}]');
+  carData = JSON.parse(localStorage.getItem('carData') || '[]');
+  saleData = JSON.parse(localStorage.getItem('saleData') || '[]');
+  recycleData = JSON.parse(localStorage.getItem('recycleData') || '[]');
+  allPurchaseHistory = JSON.parse(localStorage.getItem('allPurchaseHistory') || '[]');
+  groupMemberMap = JSON.parse(localStorage.getItem('groupMemberMap') || '{}');
+  carData.forEach(c=>{
+    if(c.priceRange==="10万以下") c.priceRange="10万以内";
+    if(!c.purchaseDate) c.purchaseDate=nowDate();
+  });
+  syncMembersFromCars();
+}
+function saveToLocal() {
+  localStorage.setItem('members', JSON.stringify(members));
+  localStorage.setItem('carData', JSON.stringify(carData));
+  localStorage.setItem('saleData', JSON.stringify(saleData));
+  localStorage.setItem('recycleData', JSON.stringify(recycleData));
+  localStorage.setItem('allPurchaseHistory', JSON.stringify(allPurchaseHistory));
+  localStorage.setItem('groupMemberMap', JSON.stringify(groupMemberMap));
+}
+function batchAllMaterialOK() {
+  carData.forEach(c => c.materialOK = true);
+  saveToLocal();
+  renderCarList();
+  alert("已一键设置所有车辆材料齐全");
+}
+function openLoadFile(){
+  document.getElementById('fileLoader').click();
+}
+function loadFromJsonFile(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const r = new FileReader();
+  r.onload=ev=>{
+    try{
+      const j=JSON.parse(ev.target.result);
+      members=j.members||[];
+      carData=j.carData||[];
+      saleData=j.saleData||[];
+      recycleData=j.recycleData||[];
+      allPurchaseHistory=j.allPurchaseHistory||[];
+      groupMemberMap = j.groupMemberMap || {};
+      carData.forEach(c=>{if(c.priceRange==="10万以下")c.priceRange="10万以内";});
+      syncMembersFromCars();
+      saveToLocal();
+      alert("恢复成功");
+      location.reload();
+    }catch(e){alert("格式错误")}
+  };
+  r.readAsText(file);
+}
+function saveToJsonFile(){
+  const blob=new Blob([JSON.stringify({members,carData,saleData,recycleData,allPurchaseHistory,groupMemberMap},null,2)],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="车辆数据.json";
+  a.click();
+  alert("备份完成");
+}
+function triggerImportExcel(){
+  document.getElementById('importExcelFile').click();
+}
+document.getElementById('importExcelFile').addEventListener('change', function(e) {
+  doImportExcel(e);
+});
+function doImportExcel(e){
+  const file=e.target.files[0];
+  if(!file)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const wb=XLSX.read(ev.target.result,{type:"array",cellDates:true});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const json=XLSX.utils.sheet_to_json(ws,{defval:""});
+      let buy=0,sold=0;
+      json.forEach(row=>{
+        const vin=String(row["车架号"] || "").trim();
+        const owner=String(row["所属人"] || "").trim();
+        const brand=String(row["品牌"] || "").trim();
+        const model=String(row["车辆型号"] || "").trim();
+        const seller=String(row["销售人员"] || "").trim();
+        const sellDate=row["销售日期"]||row["sellDate"];
+        if(!vin||!brand||!model||!owner)return;
+        function fmt(d){
+          if(d instanceof Date){
+            // 处理时区问题，使用UTC方法确保日期正确
+            const year = d.getUTCFullYear();
+            const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+            const day = String(d.getUTCDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+          }
+          return String(d||"").trim().replace(/\//g,"-").replace(/\./g,"-");
+        }
+        const pDate=fmt(row["采购时间"]||row["采购日期"]);
+        const sDate=fmt(sellDate);
+        const price=parseFloat(row["采购价"]||row["采购价(万)"]||0)||0;
+        let pr=String(row["价格区间"]||"").trim();
+        if(!pr){
+          if(price<10)pr="10万以内";
+          else if(price<=20)pr="10-20万";
+          else pr="20万以上";
+        }
+        if(pr==="10万以下")pr="10万以内";
+        const car={
+          id:Date.now()+Math.random(),vin,brand,model,
+          regTime:String(row["上牌时间"]||"上牌"||"").trim(),
+          displacement:String(row["排量"]||"").trim(),
+          mileage:String(row["公里"]||"公里数"||"").trim(),
+          color:String(row["颜色"]||"").trim(),
+          transfer:String(row["过户"]||"过户次数"||"").trim(),
+          purchaseDate:pDate,owner,
+          ratio:String(row["占比"]||"股份占比"||"").trim(),
+          source:String(row["线索来源"]||"来源"||"").trim(),
+          inspect:"",buy:price,priceRange:pr,
+          shelfStatus:"off",materialOK:false,checked:false,
+          note:String(row["备注"]||"").trim(),inDate:pDate
+        };
+        if(seller&&sDate){
+          saleData.push({...car,sellDate:sDate,seller:seller});
+          sold++;
+        }else{
+          if(!carData.some(c=>c.vin===vin)){
+            carData.push(car);
+          }
+          // 无论车架号是否重复，都添加到allPurchaseHistory中，确保统计完整
+          allPurchaseHistory.push(car);
+          buy++;
+        }
+      });
+      syncMembersFromCars();
+      saveToLocal();
+      alert(`导入完成：采购车辆 ${buy} 台，销售车辆 ${sold} 台`);
+      renderAll();renderCarList();renderSaleList();renderMember();
+    }catch(err){alert("导入失败："+err.message)}
+  };
+  r.readAsArrayBuffer(file);
+}
+function batchSetShelfOn(){
+  let c=0;
+  carData.forEach(o=>{if(o.shelfStatus==="off"){o.shelfStatus="on";c++;}});
+  saveToLocal();renderCarList();alert("批量上架："+c+"台");
+}
+window.onload=function(){
+  chartTask=echarts.init(document.getElementById("chartTask"));
+  loadFromLocal();
+  showPage("dashboard", null);
+  window.addEventListener("resize",()=>{chartTask.resize();});
+};
+function showPage(id, event){
+  // 更新页面显示
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  
+  // 更新导航按钮的active状态
+  document.querySelectorAll(".nav-section-buttons button").forEach(btn => {
+    btn.classList.remove("active");
+  });
+  
+  // 为当前点击的按钮添加active类
+  if (event && event.target) {
+    event.target.classList.add("active");
+  } else {
+    // 如果没有event对象（直接调用时），根据id找到对应的按钮并激活
+    document.querySelectorAll(".nav-section-buttons button").forEach(btn => {
+      if (btn.onclick && btn.onclick.toString().includes(`showPage('${id}')`)) {
+        btn.classList.add("active");
+      }
+    });
+  }
+  
+  // 执行对应页面的初始化
+  if(id==="dashboard"){renderAll();}
+  if(id==="cars"){fillCarFilter();renderCarList();}
+  if(id==="check"){renderCheckList();}
+  if(id==="add"){clearAddForm();}
+  if(id==="sale"){fillSaleFilter();renderSaleList();}
+  if(id==="member"){syncMembersFromCars();renderMember();}
+  if(id==="recycle"){renderRecycle();}
+}
+function clearAddForm(){
+  document.querySelectorAll("#add input").forEach(i=>i.value="");
+  document.getElementById("textRecognition").value="";
+  document.getElementById("priceRange").value="10万以内";
+  document.getElementById("shelfStatus").value="off";
+  document.getElementById("purchaseDate").value=nowDate();
+}
+
+function recognizeText(){
+  const text = document.getElementById("textRecognition").value;
+  if(!text){
+    alert("请输入车辆信息文本");
+    return;
+  }
+  
+  // 提取车架号（更宽松的匹配）
+  const vinMatch = text.match(/车架号[:：]?\s*([A-Z0-9]+)/i);
+  if(vinMatch){
+    document.getElementById("vin").value = vinMatch[1].toUpperCase();
+  }
+  
+  // 提取品牌
+  const brandMatch = text.match(/品牌[:：]?\s*([^\n]+)/i);
+  if(brandMatch){
+    document.getElementById("brand").value = brandMatch[1].trim();
+  }
+  
+  // 提取车辆型号（支持多种表达方式）
+  const modelMatch = text.match(/(型号|车型)[:：]?\s*([^\n]+)/i);
+  if(modelMatch){
+    document.getElementById("model").value = modelMatch[2].trim();
+  }
+  
+  // 提取上牌时间
+  const regTimeMatch = text.match(/(上牌时间|上牌)[:：]?\s*([^\n]+)/i);
+  if(regTimeMatch){
+    document.getElementById("regTime").value = regTimeMatch[2].trim();
+  }
+  
+  // 提取排量
+  const displacementMatch = text.match(/排量[:：]?\s*([^\n]+)/i);
+  if(displacementMatch){
+    document.getElementById("displacement").value = displacementMatch[1].trim();
+  }
+  
+  // 提取公里数
+  const mileageMatch = text.match(/(公里数|里程)[:：]?\s*([^\n]+)/i);
+  if(!mileageMatch){
+    // 尝试匹配没有冒号的情况
+    const mileageMatch2 = text.match(/公里数\s*([^\n]+)/i);
+    if(mileageMatch2){
+      document.getElementById("mileage").value = mileageMatch2[1].trim();
+    }
+  } else {
+    document.getElementById("mileage").value = mileageMatch[2].trim();
+  }
+  
+  // 提取颜色
+  const colorMatch = text.match(/颜色[:：]?\s*([^\n]+)/i);
+  if(colorMatch){
+    document.getElementById("color").value = colorMatch[1].trim();
+  }
+  
+  // 提取过户次数
+  const transferMatch = text.match(/(过户次数|过户)[:：]?\s*([^\n]+)/i);
+  if(transferMatch){
+    document.getElementById("transfer").value = transferMatch[2].trim();
+  }
+  
+  // 提取采购日期
+  const purchaseDateMatch = text.match(/(采购时间|采购日期|购买日期)[:：]?\s*([^\n]+)/i);
+  if(purchaseDateMatch){
+    document.getElementById("purchaseDate").value = purchaseDateMatch[2].trim();
+  }
+  
+  // 提取所属人（支持多种表达方式）
+  const ownerMatch = text.match(/(所属人|负责人|车主|采购员)[:：]?\s*([^\n]+)/i);
+  if(ownerMatch){
+    document.getElementById("owner").value = ownerMatch[2].trim();
+  }
+  
+  // 提取占比
+  const ratioMatch = text.match(/(占比|股份占比)[:：]?\s*([^\n]+)/i);
+  if(ratioMatch){
+    document.getElementById("ratio").value = ratioMatch[2].trim();
+  }
+  
+  // 提取采购价
+  const buyPriceMatch = text.match(/(采购价|购买价|价格)[:：]?\s*([\d.]+)\s*万?/i);
+  if(!buyPriceMatch){
+    // 尝试匹配车辆底价
+    const priceMatch2 = text.match(/车辆底价[:：]?\s*([\d.]+)/i);
+    if(priceMatch2){
+      document.getElementById("buyPrice").value = priceMatch2[1];
+      // 自动设置价格区间
+      const price = parseFloat(priceMatch2[1]);
+      if(price < 10){
+        document.getElementById("priceRange").value = "10万以内";
+      } else if(price <= 20){
+        document.getElementById("priceRange").value = "10-20万";
+      } else {
+        document.getElementById("priceRange").value = "20万以上";
+      }
+    }
+  } else {
+    document.getElementById("buyPrice").value = buyPriceMatch[2];
+    // 自动设置价格区间
+    const price = parseFloat(buyPriceMatch[2]);
+    if(price < 10){
+      document.getElementById("priceRange").value = "10万以内";
+    } else if(price <= 20){
+      document.getElementById("priceRange").value = "10-20万";
+    } else {
+      document.getElementById("priceRange").value = "20万以上";
+    }
+  }
+  
+  // 提取线索来源
+  const sourceMatch = text.match(/(来源|线索来源)[:：]?\s*([^\n]+)/i);
+  if(sourceMatch){
+    document.getElementById("source").value = sourceMatch[2].trim();
+  }
+  
+
+  
+  alert("文本识别完成，已自动填充表单");
+}
+function showDetail(id){
+  const car=carData.find(c=>c.id===id);
+  if(!car)return;
+  currentEditId = id;
+  document.getElementById("editCarId").value = car.id;
+  document.getElementById("editVin").value = car.vin||"";
+  document.getElementById("editBrand").value = car.brand||"";
+  document.getElementById("editModel").value = car.model||"";
+  document.getElementById("editRegTime").value = car.regTime||"";
+  document.getElementById("editPurchaseDate").value = car.purchaseDate||"";
+  document.getElementById("editDisplacement").value = car.displacement||"";
+  document.getElementById("editMileage").value = car.mileage||"";
+  document.getElementById("editColor").value = car.color||"";
+  document.getElementById("editTransfer").value = car.transfer||"";
+  document.getElementById("editOwner").value = car.owner||"";
+  document.getElementById("editRatio").value = car.ratio||"";
+  document.getElementById("editBuy").value = car.buy||0;
+  document.getElementById("editPriceRange").value = car.priceRange||"10万以内";
+  document.getElementById("editShelfStatus").value = car.shelfStatus||"off";
+  document.getElementById("editMaterialOK").checked = car.materialOK||false;
+  document.getElementById("editChecked").checked = car.checked||false;
+  document.getElementById("editNote").value = car.note||"";
+  document.getElementById("detailModal").style.display="block";
+}
+function saveEditCar(){
+  const id = Number(document.getElementById("editCarId").value);
+  const car = carData.find(c=>c.id===id);
+  if(!car)return;
+  car.vin = document.getElementById("editVin").value.trim();
+  car.brand = document.getElementById("editBrand").value.trim();
+  car.model = document.getElementById("editModel").value.trim();
+  car.regTime = document.getElementById("editRegTime").value.trim();
+  car.purchaseDate = document.getElementById("editPurchaseDate").value.trim();
+  car.displacement = document.getElementById("editDisplacement").value.trim();
+  car.mileage = document.getElementById("editMileage").value.trim();
+  car.color = document.getElementById("editColor").value.trim();
+  car.transfer = document.getElementById("editTransfer").value.trim();
+  car.owner = document.getElementById("editOwner").value.trim();
+  car.ratio = document.getElementById("editRatio").value.trim();
+  car.buy = parseFloat(document.getElementById("editBuy").value)||0;
+  car.priceRange = document.getElementById("editPriceRange").value;
+  car.shelfStatus = document.getElementById("editShelfStatus").value;
+  car.materialOK = document.getElementById("editMaterialOK").checked;
+  car.checked = document.getElementById("editChecked").checked;
+  car.note = document.getElementById("editNote").value.trim();
+
+  const h = allPurchaseHistory.find(x=>x.id===car.id);
+  if(h){
+    h.purchaseDate = car.purchaseDate;
+    h.owner = car.owner;
+    h.priceRange = car.priceRange;
+  }
+  
+  syncMembersFromCars();
+  saveToLocal();
+  alert("修改已保存");
+  closeModal();
+  renderAll();
+  renderCarList();
+  renderCheckList();
+}
+function closeModal(){document.getElementById("detailModal").style.display="none";}
+function saveCar(){
+  const vin=document.getElementById("vin").value.trim();
+  const brand=document.getElementById("brand").value.trim();
+  const model=document.getElementById("model").value.trim();
+  const owner=document.getElementById("owner").value.trim();
+  const purchaseDate=document.getElementById("purchaseDate").value;
+  if(!vin||!brand||!model||!owner||!purchaseDate){alert("必填项不能为空");return;}
+  const car={
+    id:Date.now(),vin,brand,model,
+    regTime:document.getElementById("regTime").value.trim(),
+    displacement:document.getElementById("displacement").value.trim(),
+    mileage:document.getElementById("mileage").value.trim(),
+    color:document.getElementById("color").value.trim(),
+    transfer:document.getElementById("transfer").value.trim(),
+    purchaseDate,owner,
+    ratio:document.getElementById("ratio").value.trim(),
+    source:document.getElementById("source").value.trim(),
+    buy:parseFloat(document.getElementById("buyPrice").value)||0,
+    priceRange:document.getElementById("priceRange").value,
+    shelfStatus:document.getElementById("shelfStatus").value,
+    materialOK:false,checked:false,note:"",inDate:purchaseDate
+  };
+  carData.push(car);allPurchaseHistory.push(car);
+  syncMembersFromCars();saveToLocal();
+  alert("保存成功");
+  clearAddForm();
+  showPage("dashboard");
+}
+function toggleMaterial(id){const o=carData.find(c=>c.id===id);if(o)o.materialOK=!o.materialOK;saveToLocal();renderCarList();}
+function updateNote(id){const o=carData.find(c=>c.id===id);const e=document.getElementById("note_"+id);if(o&&e)o.note=e.value;saveToLocal();}
+function toggleShelf(id){const o=carData.find(c=>c.id===id);if(o)o.shelfStatus=o.shelfStatus==="on"?"off":"on";saveToLocal();renderCarList();}
+function sellCar(id){
+  const car=carData.find(c=>c.id===id);
+  if(!car)return;
+  const s=prompt("销售人员：");
+  saleData.push({...car,sellDate:nowDate(),seller:s||""});
+  carData=carData.filter(c=>c.id!==id);
+  syncMembersFromCars();saveToLocal();
+  renderCarList();renderSaleList();renderAll();
+  alert("已销售");
+}
+function toRecycle(id){
+  const car = carData.find(c=>c.id===id);
+  if (car) {
+    recycleData.push(car);
+    carData = carData.filter(c=>c.id!==id);
+    allPurchaseHistory = allPurchaseHistory.filter(h => h.id !== id);
+    saveToLocal();
+    renderCarList();
+    renderAll();
+  }
+}
+function fillCarFilter(){
+  const o=Array.from(new Set(carData.map(c=>c.owner))).sort();
+  document.getElementById("carOwnerFilter").innerHTML=`<option value="">全部</option>${o.map(v=>`<option value="${v}">${v}</option>`).join("")}`;
+}
+function renderCarList(){
+  const kw=document.getElementById("carSearch").value.toLowerCase();
+  const o=document.getElementById("carOwnerFilter").value;
+  const r=document.getElementById("carPriceFilter").value;
+  const s=document.getElementById("carShelfFilter").value;
+  const stockDays=document.getElementById("carStockFilter").value;
+  let list=carData;
+  if(kw)list=list.filter(c=>(c.brand+c.model+c.vin+c.owner).toLowerCase().includes(kw));
+  if(o)list=list.filter(c=>c.owner===o);
+  if(r)list=list.filter(c=>c.priceRange===r);
+  if(s)list=list.filter(c=>c.shelfStatus===s);
+  if(stockDays){
+    const days=parseInt(stockDays);
+    const now=new Date();
+    list=list.filter(c=>{
+      const purchaseDate=new Date(c.purchaseDate);
+      const diffTime=Math.abs(now-purchaseDate);
+      const diffDays=Math.ceil(diffTime/(1000*60*60*24));
+      return diffDays>days;
+    });
+  }
+  const el=document.getElementById("carList");
+  el.innerHTML="";
+  list.forEach(c=>{
+    const cls=`${c.materialOK?"":"car-item-material-red"} ${c.shelfStatus==="off"?"car-item-off-shelf":""}`;
+    el.innerHTML+=`<div class="car-item ${cls}" onclick="showDetail(${c.id})">
+      <div><strong>${c.brand} ${c.model}</strong></div>
+      <div>车架号：${c.vin}</div>
+      <div>所属人：${c.owner}</div>
+      <div>采购价：${c.buy}万</div>
+      <div>${c.priceRange}</div>
+      <div>${c.shelfStatus==="on"?"已上架":"未上架"}</div>
+      <label onclick="event.stopPropagation()"><input type="checkbox" ${c.materialOK?"checked":""} onclick="toggleMaterial(${c.id})">材料齐全</label>
+      <div>
+        <button class="btn ${c.shelfStatus==='on'?'btn-warning':'btn-primary'}" onclick="event.stopPropagation();toggleShelf(${c.id})">
+          ${c.shelfStatus==='on'?'下架':'上架'}
+        </button>
+        <button class="btn btn-success" onclick="event.stopPropagation();sellCar(${c.id})">销售</button>
+        <button class="btn btn-danger" onclick="event.stopPropagation();toRecycle(${c.id})">删除</button>
+      </div>
+    </div>`;
+  });
+  renderCarRangeStat();
+}
+function renderCarRangeStat(){
+  document.getElementById("carRange1").textContent=carData.filter(c=>c.priceRange==="10万以内").length;
+  document.getElementById("carRange2").textContent=carData.filter(c=>c.priceRange==="10-20万").length;
+  document.getElementById("carRange3").textContent=carData.filter(c=>c.priceRange==="20万以上").length;
+}
+function renderCheckList(){
+  const kw=document.getElementById("checkSearch").value.toLowerCase();
+  const f=document.getElementById("checkFilter").value;
+  let list=carData;
+  if(kw)list=list.filter(c=>(c.brand+c.model+c.vin+c.note).toLowerCase().includes(kw));
+  if(f==="checked")list=list.filter(c=>c.checked);
+  if(f==="unchecked")list=list.filter(c=>!c.checked);
+  const el=document.getElementById("checkTable");
+  el.innerHTML="";
+  list.forEach(c=>{
+    el.innerHTML+=`<tr>
+      <td>${c.brand} ${c.model}</td>
+      <td>${c.vin}</td>
+      <td>${c.owner}</td>
+      <td><textarea id="note_${c.id}" oninput="updateNote(${c.id})">${c.note}</textarea></td>
+      <td style="color:${c.checked?"green":"red"}">${c.checked?"已盘":"未盘"}</td>
+      <td><button class="btn" onclick="toggleCheck(${c.id})">标记</button></td>
+    </tr>`;
+  });
+}
+function toggleCheck(id){const o=carData.find(c=>c.id===id);if(o)o.checked=!o.checked;saveToLocal();renderCheckList();}
+function doCheckAll(){carData.forEach(o=>o.checked=true);saveToLocal();renderCheckList();}
+function resetCheckAll(){carData.forEach(o=>o.checked=false);saveToLocal();renderCheckList();}
+function exportAllExcel(){
+  const opt = prompt(
+    "请输入要导出的内容，英文逗号分隔\n1=库存车辆  2=销售记录\n示例：1,2",
+    "1,2"
+  );
+  if (opt === null || opt.trim() === "") return;
+  const arr = opt.split(",").map(s => s.trim());
+  const wb = XLSX.utils.book_new();
+  if (arr.includes("1")) {
+    const stock = [
+      ["车架号","品牌","车辆型号","上牌时间","排量","公里数","颜色","所属人","销售人员","上下架"]
+    ];
+    carData.forEach(c=>{
+      stock.push([
+        c.vin,c.brand,c.model,c.regTime,c.displacement,c.mileage,c.color,c.owner,"",
+        c.shelfStatus==="on"?"已上架":"未上架"
+      ]);
+    });
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(stock),"库存车辆");
+  }
+  if (arr.includes("2")) {
+    const sold = [
+      ["车架号","品牌","车辆型号","上牌时间","排量","公里数","颜色","所属人","销售人员","上下架"]
+    ];
+    saleData.forEach(s=>{
+      sold.push([
+        s.vin,s.brand,s.model,s.regTime,s.displacement,s.mileage,s.color,s.owner,s.seller,
+        "已销售"
+      ]);
+    });
+    XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sold),"销售记录");
+  }
+  if (wb.SheetNames.length === 0) {
+    alert("未选择任何导出内容");
+    return;
+  }
+  XLSX.writeFile(wb,"车辆数据.xlsx");
+}
+function fillSaleFilter(){
+  const o=Array.from(new Set(saleData.map(s=>s.owner))).sort();
+  document.getElementById("saleOwnerFilter").innerHTML=`<option value="">全部</option>${o.map(v=>`<option value="${v}">${v}</option>`).join("")}`;
+}
+function restoreSale(id){
+  const s=saleData.find(x=>x.id===id);
+  carData.push(s);
+  saleData=saleData.filter(x=>x.id!==id);
+  syncMembersFromCars();saveToLocal();renderSaleList();
+}
+function renderSaleList(){
+  const kw=document.getElementById("saleSearch").value.toLowerCase();
+  const sKw=document.getElementById("saleSellerFilter").value.toLowerCase();
+  const o=document.getElementById("saleOwnerFilter").value;
+  const r=document.getElementById("salePriceFilter").value;
+  let list=saleData;
+  if(kw)list=list.filter(s=>(s.brand+s.model+s.vin+s.owner).toLowerCase().includes(kw));
+  if(sKw)list=list.filter(s=>(s.seller||"").toLowerCase().includes(sKw));
+  if(o)list=list.filter(s=>s.owner===o);
+  if(r)list=list.filter(s=>s.priceRange===r);
+  const el=document.getElementById("saleTable");
+  el.innerHTML="";
+  list.forEach(s=>{
+    el.innerHTML+=`<tr>
+      <td>${s.brand} ${s.model}</td>
+      <td>${s.vin}</td>
+      <td>${s.owner}</td>
+      <td>${s.buy}</td>
+      <td>${s.priceRange}</td>
+      <td>${s.seller||"-"}</td>
+      <td>${s.sellDate}</td>
+      <td><button class="btn" onclick="restoreSale(${s.id})">恢复</button></td>
+    </tr>`;
+  });
+}
+function renderMember(){
+  const el=document.getElementById("memberTable");
+  el.innerHTML="";
+  members.forEach(m=>{
+    el.innerHTML+=`<tr>
+      <td>${m.name}</td>
+      <td>${m.type==="group"?"小组":"个人"}</td>
+      <td>${m.target||5}</td>
+      <td>
+        <button class="btn btn-danger" onclick="delMember('${m.name}')">删除</button>
+        ${m.type==='group'?`<button class="btn btn-primary" onclick="openGroupDetail('${m.name}')">详情</button>`:''}
+      </td>
+    </tr>`;
+  });
+}
+function addMember(){
+  const n=document.getElementById("newName").value.trim();
+  const t=parseInt(document.getElementById("newTarget").value)||5;
+  if(!n||members.some(m=>m.name===n)){alert("无效或重复");return;}
+  members.push({name:n,type:"person",target:t});
+  saveToLocal();renderMember();
+}
+function delMember(name){
+  if(!confirm("确定删除【"+name+"】？关联车辆所属人会清空！")) return;
+  members = members.filter(m => m.name !== name);
+  delete groupMemberMap[name];
+  carData = carData.map(c => { if (c.owner === name) c.owner = ""; return c; });
+  saleData = saleData.map(s => { if (s.owner === name) s.owner = ""; return s; });
+  allPurchaseHistory = allPurchaseHistory.map(p => { if (p.owner === name) p.owner = ""; return p; });
+  syncMembersFromCars();
+  saveToLocal();
+  renderMember();renderAll();
+  alert("删除成功");
+}
+function createGroup(){
+  const ns=document.getElementById("groupNames").value.split(",").map(s=>s.trim()).filter(Boolean);
+  const gn=document.getElementById("groupName").value.trim();
+  const gt=parseInt(document.getElementById("groupTarget").value)||10;
+  if(ns.length<2||!gn||members.some(m=>m.name===gn)){alert("格式错误");return;}
+  members.push({name:gn,type:"group",target:gt});
+  groupMemberMap[gn]=ns;
+  saveToLocal();renderMember();renderAll();
+  alert("小组创建成功");
+}
+function renderRecycle(){
+  const el=document.getElementById("recycleTable");
+  el.innerHTML="";
+  recycleData.forEach(c=>{
+    el.innerHTML+=`<tr>
+      <td>${c.brand} ${c.model}</td>
+      <td>${c.vin}</td>
+      <td>${c.owner}</td>
+      <td>
+        <button class="btn" onclick="recover(${c.id})">恢复</button>
+        <button class="btn btn-danger" onclick="delForever(${c.id})">删除</button>
+      </td>
+    </tr>`;
+  });
+}
+function recover(id){
+  const c=recycleData.find(x=>x.id===id);
+  carData.push(c);
+  recycleData=recycleData.filter(x=>x.id!==id);
+  syncMembersFromCars();saveToLocal();renderRecycle();renderCarList();
+}
+function delForever(id){
+  recycleData=recycleData.filter(x=>x.id!==id);
+  saveToLocal();renderRecycle();
+}
+function renderAll(){
+  // 首先同步成员数据，确保所有有车辆数据的人都在成员列表中
+  syncMembersFromCars();
+  
+  const today=nowDate();
+  const month=nowMonth();
+  document.getElementById("todayDate").innerText=today;
+  const totalStock=carData.length;
+  const todayIn = allPurchaseHistory.filter(s => isToday(s.purchaseDate)).length;
+  const todayOut = saleData.filter(s => isToday(s.sellDate)).length;
+  const totalSold = saleData.length;
+  document.getElementById("totalStock").innerText=totalStock;
+  document.getElementById("todayIn").innerText=todayIn;
+  document.getElementById("todayOut").innerText=todayOut;
+  document.getElementById("totalSold").innerText=totalSold;
+  const mIn1 = allPurchaseHistory.filter(s=> isCurrentMonth(s.purchaseDate) && s.priceRange==="10万以内").length;
+  const mIn2 = allPurchaseHistory.filter(s=> isCurrentMonth(s.purchaseDate) && s.priceRange==="10-20万").length;
+  const mIn3 = allPurchaseHistory.filter(s=> isCurrentMonth(s.purchaseDate) && s.priceRange==="20万以上").length;
+  const mOut1 = saleData.filter(s=> isCurrentMonth(s.sellDate) && s.priceRange==="10万以内").length;
+  const mOut2 = saleData.filter(s=> isCurrentMonth(s.sellDate) && s.priceRange==="10-20万").length;
+  const mOut3 = saleData.filter(s=> isCurrentMonth(s.sellDate) && s.priceRange==="20万以上").length;
+  document.getElementById("mIn1").textContent=mIn1;
+  document.getElementById("mIn2").textContent=mIn2;
+  document.getElementById("mIn3").textContent=mIn3;
+  document.getElementById("mOut1").textContent=mOut1;
+  document.getElementById("mOut2").textContent=mOut2;
+  document.getElementById("mOut3").textContent=mOut3;
+  const dataList=members.map(m=>{
+    let inMonth=0,outMonth=0,stock=0;
+    if(m.type==="person"){
+      inMonth  = allPurchaseHistory.filter(s=>s.owner===m.name && isCurrentMonth(s.purchaseDate)).length;
+      outMonth = saleData.filter(s=>s.owner===m.name && isCurrentMonth(s.sellDate)).length;
+      stock=carData.filter(c=>c.owner===m.name).length;
+    }else{
+      const ms=groupMemberMap[m.name]||[];
+      inMonth= allPurchaseHistory.filter(s=>ms.includes(s.owner)&&isCurrentMonth(s.purchaseDate)).length;
+      outMonth= saleData.filter(s=>ms.includes(s.owner)&&isCurrentMonth(s.sellDate)).length;
+      stock= carData.filter(c=>ms.includes(c.owner)).length;
+    }
+    const p=(inMonth+outMonth)===0?0:((outMonth/(inMonth+outMonth))*100).toFixed(1);
+    return {...m,inMonth,outMonth,stock,p};
+  });
+  if(chartTask){chartTask.clear();}
+  chartTask.setOption({
+    tooltip: {
+      trigger: "axis",
+      axisPointer: {
+        type: "shadow",
+        label: {
+          backgroundColor: "#6a7985"
+        }
+      },
+      formatter: function(params) {
+        let result = params[0].name + '<br/>';
+        params.forEach(item => {
+          result += item.marker + item.seriesName + ': ' + item.value + (item.seriesName.includes('%') ? '' : ' 台') + '<br/>';
+        });
+        return result;
+      },
+      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      borderColor: '#3b82f6',
+      borderWidth: 1,
+      textStyle: {
+        color: '#fff'
+      }
+    },
+    legend: {
+      data: ["目标","本月收车","本月售车","库存","采销占比(%)"],
+      top: 10,
+      textStyle: {
+        color: '#334155',
+        fontSize: 12
+      },
+      itemWidth: 12,
+      itemHeight: 12
+    },
+    grid: {
+      left: "0%",
+      right: "0%",
+      bottom: "25%",
+      top: "15%",
+      containLabel: true
+    },
+    xAxis: {
+      type: "category",
+      data: dataList.map(i=>i.name),
+      axisLabel: {
+        interval: 0,
+        rotate: 45,
+        fontSize: 11,
+        color: '#64748b'
+      },
+      axisLine: {
+        lineStyle: {
+          color: '#e2e8f0'
+        }
+      },
+      axisTick: {
+        show: false
+      }
+    },
+    yAxis: [
+      {
+        type: "value",
+        axisLabel: {
+          color: '#64748b',
+          fontSize: 11
+        },
+        axisLine: {
+          show: false
+        },
+        axisTick: {
+          show: false
+        },
+        splitLine: {
+          lineStyle: {
+            color: '#f1f5f9',
+            type: 'dashed'
+          }
+        }
+      },
+      {
+        type: "value",
+        axisLabel: {
+          formatter: "{value}%",
+          color: '#64748b',
+          fontSize: 11
+        },
+        axisLine: {
+          show: false
+        },
+        axisTick: {
+          show: false
+        },
+        splitLine: {
+          show: false
+        }
+      }
+    ],
+    series: [
+      {
+        name: "目标",
+        type: "bar",
+        data: dataList.map(i=>i.target),
+        itemStyle: {
+          color: '#94a3b8'
+        },
+        label: {
+          show: true,
+          position: 'top',
+          fontSize: 11,
+          color: '#64748b'
+        },
+        barWidth: '15%'
+      },
+      {
+        name: "本月收车",
+        type: "bar",
+        data: dataList.map(i=>i.inMonth),
+        itemStyle: {
+          color: '#3b82f6'
+        },
+        label: {
+          show: true,
+          position: 'top',
+          fontSize: 11,
+          color: '#3b82f6'
+        },
+        barWidth: '15%'
+      },
+      {
+        name: "本月售车",
+        type: "bar",
+        data: dataList.map(i=>i.outMonth),
+        itemStyle: {
+          color: '#10b981'
+        },
+        label: {
+          show: true,
+          position: 'top',
+          fontSize: 11,
+          color: '#10b981'
+        },
+        barWidth: '15%'
+      },
+      {
+        name: "库存",
+        type: "bar",
+        data: dataList.map(i=>i.stock),
+        itemStyle: {
+          color: '#f59e0b'
+        },
+        label: {
+          show: true,
+          position: 'top',
+          fontSize: 11,
+          color: '#f59e0b'
+        },
+        barWidth: '15%'
+      },
+      {
+        name: "采销占比(%)",
+        type: "line",
+        yAxisIndex: 1,
+        data: dataList.map(i=>i.p),
+        itemStyle: {
+          color: '#ec4899'
+        },
+        lineStyle: {
+          width: 3
+        },
+        symbol: 'circle',
+        symbolSize: 8,
+        label: {
+          show: true,
+          position: 'top',
+          formatter: '{c}%',
+          fontSize: 11,
+          color: '#ec4899',
+          backgroundColor: 'rgba(255, 255, 255, 0.8)',
+          borderColor: '#ec4899',
+          borderWidth: 1,
+          borderRadius: 4
+        },
+        z: -1
+      }
+    ],
+    dataZoom: [
+      {
+        type: "slider",
+        show: dataList.length > 5,
+        xAxisIndex: 0,
+        bottom: 5,
+        height: 16,
+        borderColor: '#e2e8f0',
+        backgroundColor: '#f8fafc',
+        fillerColor: 'rgba(59, 130, 246, 0.2)',
+        handleStyle: {
+          color: '#3b82f6'
+        }
+      }
+    ],
+    animation: true,
+    animationDuration: 1000,
+    animationEasing: 'cubicOut'
+  },true);
+  renderPersonStock();
+}
+function renderPersonStock(){
+  const f=document.getElementById("fOwner1").value;
+  const kw=document.getElementById("personSearch").value.toLowerCase();
+  const el=document.getElementById("personStockTable");
+  el.innerHTML="";
+  let personList = members.filter(m=>m.type==="person");
+  let groupList = members.filter(m=>m.type==="group");
+  let allList = [...personList,...groupList];
+  allList.forEach(item=>{
+    if(f&&item.name!==f)return;
+    if(kw&&!item.name.toLowerCase().includes(kw))return;
+    let inMonth,outMonth,stock,s1,s2,s3;
+    if(item.type==="person"){
+      inMonth=allPurchaseHistory.filter(s=>s.owner===item.name&&isCurrentMonth(s.purchaseDate)).length;
+      outMonth=saleData.filter(s=>s.owner===item.name&&isCurrentMonth(s.sellDate)).length;
+      stock=carData.filter(c=>c.owner===item.name).length;
+      s1=carData.filter(c=>c.owner===item.name&&c.priceRange==="10万以内").length;
+      s2=carData.filter(c=>c.owner===item.name&&c.priceRange==="10-20万").length;
+      s3=carData.filter(c=>c.owner===item.name&&c.priceRange==="20万以上").length;
+    }else{
+      const ms=groupMemberMap[item.name]||[];
+      inMonth=allPurchaseHistory.filter(s=>ms.includes(s.owner)&&isCurrentMonth(s.purchaseDate)).length;
+      outMonth=saleData.filter(s=>ms.includes(s.owner)&&isCurrentMonth(s.sellDate)).length;
+      stock=carData.filter(c=>ms.includes(c.owner)).length;
+      s1=carData.filter(c=>ms.includes(c.owner)&&c.priceRange==="10万以内").length;
+      s2=carData.filter(c=>ms.includes(c.owner)&&c.priceRange==="10-20万").length;
+      s3=carData.filter(c=>ms.includes(c.owner)&&c.priceRange==="20万以上").length;
+    }
+    const rate=item.target?((inMonth/item.target)*100).toFixed(1)+"%":"0%";
+    // 计算采销占比：售车数量 / (收车数量 + 售车数量) * 100%
+    const saleRatio=(inMonth+outMonth)>0?((outMonth/(inMonth+outMonth))*100).toFixed(1)+"%":"0%";
+    const gtag=item.type==="group"?"（小组）":"";
+    el.innerHTML+=`<tr style="${item.type==='group'?'background:#f0f9ff;':''}">
+      <td><span style="cursor: pointer; color: #3b82f6; text-decoration: underline;" onclick="showPersonDetail('${item.name}', '${item.type}')">${item.name}${gtag}</span></td>
+      <td>10万内:${s1} | 10-20万:${s2} | 20万+:${s3}</td>
+      <td>${stock}</td>
+      <td>${inMonth}</td>
+      <td>${outMonth}</td>
+      <td>${saleRatio}</td>
+      <td>${rate}</td>
+    </tr>`;
+  });
+}
+function openGroupDetail(gname){
+  const ms=groupMemberMap[gname]||[];
+  const g=members.find(x=>x.name===gname&&x.type==="group");
+  const t=g?.target||10;
+  const inMonth=allPurchaseHistory.filter(s=>ms.includes(s.owner)&&isCurrentMonth(s.purchaseDate)).length;
+  const outMonth=saleData.filter(s=>ms.includes(s.owner)&&isCurrentMonth(s.sellDate)).length;
+  const stock=carData.filter(c=>ms.includes(c.owner)).length;
+  
+  let html=`
+    <div class="group-detail-content">
+      <div class="group-info">
+        <p><strong>小组：</strong>${gname}</p>
+        <p><strong>目标：</strong><span id="groupTargetDisplay">${t}</span> <button class="btn btn-sm btn-primary" onclick="editGroupTarget('${gname}')">编辑</button></p>
+        <p><strong>成员：</strong><span id="groupMembersDisplay">${ms.join("、")}</span> <button class="btn btn-sm btn-primary" onclick="editGroupMembers('${gname}')">编辑</button></p>
+        <p><strong>本月收车：</strong>${inMonth} 台</p>
+        <p><strong>本月售车：</strong>${outMonth} 台</p>
+        <p><strong>当前库存：</strong>${stock} 台</p>
+      </div>
+      <br>
+      <h4>成员明细</h4>
+      <div class="member-details">
+  `;
+  
+  ms.forEach(m=>{
+    const im=allPurchaseHistory.filter(s=>s.owner===m&&isCurrentMonth(s.purchaseDate)).length;
+    const om=saleData.filter(s=>s.owner===m&&isCurrentMonth(s.sellDate)).length;
+    const st=carData.filter(c=>c.owner===m).length;
+    html+=`<p>${m}：收车${im}台，售车${om}台，库存${st}台</p>`;
+  });
+  
+  html+=`
+      </div>
+    </div>
+  `;
+  
+  document.getElementById("groupDetailTitle").innerText=`【${gname}】小组详情`;
+  document.getElementById("groupDetailBody").innerHTML=html;
+  document.getElementById("groupDetailModal").style.display="flex";
+}
+
+function editGroupTarget(groupName) {
+  const g=members.find(x=>x.name===groupName&&x.type==="group");
+  const currentTarget=g?.target||10;
+  const newTarget=prompt("请输入新的小组目标：", currentTarget);
+  if(newTarget!==null){
+    const targetNum=parseInt(newTarget);
+    if(!isNaN(targetNum)){
+      g.target=targetNum;
+      saveToLocal();
+      openGroupDetail(groupName);
+      renderAll();
+      renderMember();
+      alert("目标修改成功！");
+    } else {
+      alert("请输入有效的数字！");
+    }
+  }
+}
+
+function editGroupMembers(groupName) {
+  const currentMembers=groupMemberMap[groupName]||[];
+  const currentMembersStr=currentMembers.join(",");
+  const newMembersStr=prompt("请输入小组成员，用逗号分隔：", currentMembersStr);
+  if(newMembersStr!==null){
+    const newMembers=newMembersStr.split(",").map(m=>m.trim()).filter(Boolean);
+    if(newMembers.length>=2){
+      groupMemberMap[groupName]=newMembers;
+      saveToLocal();
+      openGroupDetail(groupName);
+      renderAll();
+      renderMember();
+      alert("成员修改成功！");
+    } else {
+      alert("小组至少需要2名成员！");
+    }
+  }
+}
+function closeGroupModal(){
+  document.getElementById("groupDetailModal").style.display="none";
+}
+
+function showCarDetails(type) {
+  let cars = [];
+  let title = "";
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  const currentMonth = today.getMonth();
+  const currentYear = today.getFullYear();
+  
+  switch(type) {
+    case 'todayIn':
+      title = "今日收车详情";
+      cars = carData.filter(c => {
+        const purchaseDate = new Date(c.purchaseDate);
+        return purchaseDate.toISOString().split('T')[0] === todayStr;
+      });
+      break;
+    case 'todayOut':
+      title = "今日售车详情";
+      cars = saleData.filter(s => {
+        const sellDate = new Date(s.sellDate);
+        return sellDate.toISOString().split('T')[0] === todayStr;
+      });
+      break;
+    case 'mIn1':
+      title = "当月10万以内收车详情";
+      cars = carData.filter(c => {
+        const purchaseDate = new Date(c.purchaseDate);
+        return purchaseDate.getMonth() === currentMonth && 
+               purchaseDate.getFullYear() === currentYear &&
+               c.priceRange === "10万以内";
+      });
+      break;
+    case 'mIn2':
+      title = "当月10-20万收车详情";
+      cars = carData.filter(c => {
+        const purchaseDate = new Date(c.purchaseDate);
+        return purchaseDate.getMonth() === currentMonth && 
+               purchaseDate.getFullYear() === currentYear &&
+               c.priceRange === "10-20万";
+      });
+      break;
+    case 'mIn3':
+      title = "当月20万以上收车详情";
+      cars = carData.filter(c => {
+        const purchaseDate = new Date(c.purchaseDate);
+        return purchaseDate.getMonth() === currentMonth && 
+               purchaseDate.getFullYear() === currentYear &&
+               c.priceRange === "20万以上";
+      });
+      break;
+    case 'mOut1':
+      title = "当月10万以内售车详情";
+      cars = saleData.filter(s => {
+        const sellDate = new Date(s.sellDate);
+        return sellDate.getMonth() === currentMonth && 
+               sellDate.getFullYear() === currentYear &&
+               s.priceRange === "10万以内";
+      });
+      break;
+    case 'mOut2':
+      title = "当月10-20万售车详情";
+      cars = saleData.filter(s => {
+        const sellDate = new Date(s.sellDate);
+        return sellDate.getMonth() === currentMonth && 
+               sellDate.getFullYear() === currentYear &&
+               s.priceRange === "10-20万";
+      });
+      break;
+    case 'mOut3':
+      title = "当月20万以上售车详情";
+      cars = saleData.filter(s => {
+        const sellDate = new Date(s.sellDate);
+        return sellDate.getMonth() === currentMonth && 
+               sellDate.getFullYear() === currentYear &&
+               s.priceRange === "20万以上";
+      });
+      break;
+  }
+  
+  document.getElementById("carDetailsTitle").innerText = title;
+  
+  if(cars.length === 0) {
+    document.getElementById("carDetailsBody").innerHTML = "<p>暂无数据</p>";
+  } else {
+    // 根据类型动态设置表头
+    const isSaleDetails = type.includes('Out');
+    const timeHeader = isSaleDetails ? '销售时间' : '采购时间';
+    
+    let html = '<table style="width:100%; border-collapse: collapse; font-size: 14px;">';
+    html += `<thead><tr><th>品牌</th><th>型号</th><th>车架号</th><th>所属人</th><th>${timeHeader}</th><th>时间</th></tr></thead>`;
+    html += '<tbody>';
+    
+    cars.forEach(car => {
+      const timeValue = car.purchaseDate || car.sellDate;
+      html += '<tr>';
+      html += `<td>${car.brand}</td>`;
+      html += `<td>${car.model}</td>`;
+      html += `<td>${car.vin}</td>`;
+      html += `<td>${car.owner}</td>`;
+      html += `<td>${timeHeader}</td>`;
+      html += `<td>${timeValue}</td>`;
+      html += '</tr>';
+    });
+    
+    html += '</tbody></table>';
+    document.getElementById("carDetailsBody").innerHTML = html;
+  }
+  
+  document.getElementById("carDetailsModal").style.display = "flex";
+}
+
+function closeCarDetailsModal() {
+  document.getElementById("carDetailsModal").style.display = "none";
+}
+
+// 显示个人/小组详情和完成情况图表
+function showPersonDetail(name, type) {
+  // 设置标题
+  document.getElementById("personDetailTitle").innerText = `${name}${type === 'group' ? '（小组）' : ''} 详情`;
+  
+  // 获取个人/小组数据
+  let inMonth, outMonth, stock, target, membersList = [];
+  
+  if (type === 'person') {
+    // 个人数据
+    inMonth = allPurchaseHistory.filter(s => s.owner === name && isCurrentMonth(s.purchaseDate)).length;
+    outMonth = saleData.filter(s => s.owner === name && isCurrentMonth(s.sellDate)).length;
+    stock = carData.filter(c => c.owner === name).length;
+    const member = members.find(m => m.name === name && m.type === 'person');
+    target = member?.target || 5;
+  } else {
+    // 小组数据
+    const ms = groupMemberMap[name] || [];
+    membersList = ms;
+    inMonth = allPurchaseHistory.filter(s => ms.includes(s.owner) && isCurrentMonth(s.purchaseDate)).length;
+    outMonth = saleData.filter(s => ms.includes(s.owner) && isCurrentMonth(s.sellDate)).length;
+    stock = carData.filter(c => ms.includes(c.owner)).length;
+    const member = members.find(m => m.name === name && m.type === 'group');
+    target = member?.target || 10;
+  }
+  
+  // 计算完成率和采销占比
+  const completionRate = target > 0 ? (inMonth / target * 100).toFixed(1) + '%' : '0%';
+  const saleRatio = (inMonth + outMonth) > 0 ? (outMonth / (inMonth + outMonth) * 100).toFixed(1) + '%' : '0%';
+  
+  // 显示基本信息
+  let infoHtml = `
+    <div style="line-height: 1.6;">
+      <p><strong>目标：</strong>${target} 台</p>
+      <p><strong>本月收车：</strong>${inMonth} 台</p>
+      <p><strong>本月售车：</strong>${outMonth} 台</p>
+      <p><strong>当前库存：</strong>${stock} 台</p>
+      <p><strong>完成率：</strong>${completionRate}</p>
+      <p><strong>采销占比：</strong>${saleRatio}</p>
+  `;
+  
+  if (type === 'group' && membersList.length > 0) {
+    infoHtml += `<p><strong>成员：</strong>${membersList.join('、')}</p>`;
+  }
+  
+  infoHtml += `</div>`;
+  document.getElementById("personDetailInfo").innerHTML = infoHtml;
+  
+  // 初始化图表
+  const chartDom = document.getElementById('personDetailChart');
+  const myChart = echarts.init(chartDom);
+  
+  // 准备图表数据
+  const option = {
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow'
+      }
+    },
+    legend: {
+      data: ['目标', '本月收车', '本月售车', '库存']
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      data: ['数据统计']
+    },
+    yAxis: {
+      type: 'value'
+    },
+    series: [
+      {
+        name: '目标',
+        type: 'bar',
+        data: [target],
+        itemStyle: {
+          color: '#94a3b8'
+        }
+      },
+      {
+        name: '本月收车',
+        type: 'bar',
+        data: [inMonth],
+        itemStyle: {
+          color: '#3b82f6'
+        }
+      },
+      {
+        name: '本月售车',
+        type: 'bar',
+        data: [outMonth],
+        itemStyle: {
+          color: '#10b981'
+        }
+      },
+      {
+        name: '库存',
+        type: 'bar',
+        data: [stock],
+        itemStyle: {
+          color: '#f59e0b'
+        }
+      }
+    ]
+  };
+  
+  // 渲染图表
+  myChart.setOption(option);
+  
+  // 显示模态框
+  document.getElementById("personDetailModal").style.display = "flex";
+}
+
+// 关闭个人/小组详情模态框
+function closePersonDetailModal() {
+  document.getElementById("personDetailModal").style.display = "none";
+}
+
+// 屏蔽错误的重复统计，不影响原代码
+function updateTodayAndMonthInCar(){}
+const originalRenderAll = window.renderAll || function(){};
+window.renderAll = function() {
+  originalRenderAll();
+};
+
+// ===================== 销售日期可修改（原代码不动）=====================
+// 打开修改销售日期的弹窗
+function openEditSaleDate(id) {
+  let sale = saleData.find(item => item.id == id);
+  if (!sale) return;
+  let newDate = prompt("请输入新的销售日期（格式：2025-12-31）", sale.sellDate);
+  if (newDate) {
+    sale.sellDate = newDate;
+    saveToLocal();
+    renderSaleList();
+    renderAll();
+    alert("修改成功！");
+  }
+}
+
+// 给销售记录添加修改按钮（不影响原代码）
+const oldRenderSaleList = window.renderSaleList || function(){};
+window.renderSaleList = function() {
+  oldRenderSaleList();
+  
+  // 自动给每条销售记录加上修改按钮
+  let trs = document.querySelectorAll("#saleTable tr");
+  trs.forEach((tr, idx) => {
+    let sale = saleData[idx];
+    if (sale && sale.id) {
+      let btnTd = tr.lastElementChild;
+      if (btnTd && !btnTd.innerHTML.includes("修改日期")) {
+        btnTd.innerHTML += ` <button onclick='openEditSaleDate(${sale.id})'>修改日期</button>`;
+      }
+    }
+  });
+}
+// ====================================================================
+</script>
+  </div>
+</div>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(registration => console.log('Service Worker 注册成功'))
+        .catch(error => console.log('Service Worker 注册失败:', error));
+    });
+  }
+</script>
+</body>
+</html>
